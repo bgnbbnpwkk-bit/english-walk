@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="English Walk" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <title>English Walk</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-soft: #141b32;
+      --bg-card: #1a2440;
+      --accent: #5b8cff;
+      --accent-2: #7c5bff;
+      --text: #f2f5ff;
+      --text-dim: #9aa6c7;
+      --danger: #ff5b6e;
+      --ok: #46d6a0;
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overscroll-behavior: none;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      color: var(--text);
+    }
+
+    .hidden { display: none !important; }
+
+    /* ---------- Top bar ---------- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px 8px;
+    }
+    .brand {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .brand .dot { color: var(--accent); }
+    .icon-btns { display: flex; gap: 10px; }
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform .12s ease, background .2s ease;
+    }
+    .icon-btn:active { transform: scale(0.92); background: var(--bg-soft); }
+
+    /* ---------- Login screen ---------- */
+    #loginScreen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      gap: 18px;
+    }
+    .logo-circle {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      box-shadow: 0 12px 40px rgba(91,140,255,0.35);
+    }
+    #loginScreen h1 { font-size: 30px; margin: 6px 0 0; }
+    #loginScreen p { color: var(--text-dim); margin: 0; max-width: 320px; font-size: 16px; line-height: 1.5; }
+
+    .google-btn {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #ffffff;
+      color: #1f2333;
+      font-size: 17px;
+      font-weight: 600;
+      padding: 14px 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      transition: transform .12s ease;
+    }
+    .google-btn:active { transform: scale(0.96); }
+    .google-btn svg { width: 22px; height: 22px; }
+
+    .auth-error {
+      color: var(--danger);
+      background: rgba(255,91,110,0.1);
+      border: 1px solid rgba(255,91,110,0.3);
+      padding: 14px 18px;
+      border-radius: 14px;
+      max-width: 340px;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    /* ---------- Main app ---------- */
+    #app { flex: 1; display: flex; flex-direction: column; }
+
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 22px 8px;
+      gap: 22px;
+      text-align: center;
+    }
+
+    .status-line {
+      font-size: 15px;
+      color: var(--text-dim);
+      min-height: 20px;
+      letter-spacing: 0.3px;
+    }
+
+    .ai-bubble {
+      font-size: 24px;
+      line-height: 1.45;
+      font-weight: 500;
+      max-width: 600px;
+      min-height: 60px;
+    }
+
+    .user-echo {
+      font-size: 17px;
+      color: var(--accent);
+      font-style: italic;
+      min-height: 22px;
+      max-width: 600px;
+      opacity: 0;
+      transition: opacity .25s ease;
+    }
+    .user-echo.show { opacity: 1; }
+
+    /* Mic visualizer */
+    .mic-wrap {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mic-core {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      transition: background .25s ease, transform .25s ease;
+      z-index: 2;
+    }
+    .mic-wrap.listening .mic-core {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    }
+    .mic-wrap.speaking .mic-core {
+      background: linear-gradient(135deg, var(--ok), var(--accent));
+    }
+    .pulse-ring {
+      position: absolute;
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0;
+      z-index: 1;
+    }
+    .mic-wrap.listening .pulse-ring { animation: pulse 1.6s ease-out infinite; }
+    .mic-wrap.speaking .pulse-ring { background: var(--ok); animation: pulse 1.6s ease-out infinite; }
+    @keyframes pulse {
+      0%   { transform: scale(1);   opacity: 0.55; }
+      100% { transform: scale(1.9); opacity: 0; }
+    }
+
+    /* Controls */
+    .controls {
+      padding: 18px 22px calc(18px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .main-btn {
+      width: 100%;
+      max-width: 420px;
+      padding: 22px;
+      border-radius: var(--radius);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      transition: transform .12s ease, filter .2s ease;
+    }
+    .main-btn:active { transform: scale(0.97); }
+    .btn-start { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+    .btn-stop  { background: linear-gradient(135deg, var(--danger), #ff8a4b); }
+
+    .footer-note {
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 0.4px;
+    }
+
+    /* ---------- Overlays ---------- */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,8,18,0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 50;
+    }
+    .sheet {
+      width: 100%;
+      max-width: 480px;
+      max-height: 86vh;
+      overflow-y: auto;
+      background: var(--bg-soft);
+      border-radius: 24px 24px 0 0;
+      padding: 22px 22px calc(28px + env(safe-area-inset-bottom));
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+      animation: slideUp .25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .sheet-head h2 { font-size: 22px; margin: 0; }
+    .close-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      font-size: 18px;
+    }
+    .section { margin-top: 22px; }
+    .section h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--accent);
+      margin: 0 0 10px;
+    }
+    .section ul { margin: 0; padding-left: 20px; line-height: 1.7; color: var(--text); }
+    .section p { margin: 0; line-height: 1.6; color: var(--text); }
+    .muted { color: var(--text-dim); font-size: 14px; }
+
+    .field-label { display: block; font-size: 14px; color: var(--text-dim); margin: 0 0 8px; }
+    .text-input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+    }
+    .text-input:focus { border-color: var(--accent); }
+
+    .sheet-btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      background: var(--bg-card);
+      transition: transform .12s ease;
+    }
+    .sheet-btn:active { transform: scale(0.97); }
+    .sheet-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+    .sheet-btn.danger { background: rgba(255,91,110,0.15); color: var(--danger); border: 1px solid rgba(255,91,110,0.35); }
+
+    .saved-hint { font-size: 13px; color: var(--ok); min-height: 18px; margin-top: 6px; }
+    .version-tag { font-size: 13px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+  <!-- ============ LOGIN SCREEN ============ -->
+  <section id="loginScreen">
+    <div class="logo-circle">🎧</div>
+    <h1>English Walk</h1>
+    <p>Your voice-based English conversation partner. Sign in to start practising.</p>
+    <button id="googleSignInBtn" class="google-btn">
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div id="authError" class="auth-error hidden"></div>
+    <div class="footer-note" style="margin-top:24px;">Team Melli &amp; Marc</div>
+  </section>
+
+  <!-- ============ MAIN APP ============ -->
+  <div id="app" class="hidden">
+    <div class="topbar">
+      <div class="brand">English<span class="dot">·</span>Walk</div>
+      <div class="icon-btns">
+        <button id="infoBtn" class="icon-btn" aria-label="Info">ℹ️</button>
+        <button id="settingsBtn" class="icon-btn" aria-label="Einstellungen">⚙️</button>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div id="statusLine" class="status-line">Tap Start when you're ready to talk.</div>
+      <div class="mic-wrap" id="micWrap">
+        <div class="pulse-ring"></div>
+        <div class="mic-core" id="micCore">🎙️</div>
+      </div>
+      <div id="aiBubble" class="ai-bubble"></div>
+      <div id="userEcho" class="user-echo"></div>
+    </div>
+
+    <div class="controls">
+      <button id="mainBtn" class="main-btn btn-start">Start</button>
+      <div class="footer-note">Team Melli &amp; Marc</div>
+    </div>
+  </div>
+
+  <!-- ============ INFO OVERLAY ============ -->
+  <div id="infoOverlay" class="overlay hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2>About</h2>
+        <button class="close-btn" data-close="infoOverlay">✕</button>
+      </div>
+
+      <div class="section">
+        <h3>Features</h3>
+        <ul>
+          <li>Voice-based English conversation training</li>
+          <li>Automatic grammar and vocabulary correction</li>
+          <li>Friendly AI conversation partner</li>
+          <li>Bluetooth headphone / microphone support</li>
+          <li>Hands-free operation</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>Changelog</h3>
+        <p><strong>v<span id="changelogVersion">1.0.0</span></strong> — Initial release: voice conversation, TTS, Google Auth, Gemini integration</p>
+      </div>
+
+      <div class="section">
+        <h3>Tech-Stack</h3>
+        <ul>
+          <li>Firebase Authentication (Google)</li>
+          <li>Gemini 2.5 Flash API</li>
+          <li>Web Speech API (STT + TTS)</li>
+          <li>Firebase SDK (CDN)</li>
+          <li>GitHub Pages</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <p class="muted">Version <span id="infoVersion">1.0.0</span> · Team Melli &amp; Marc</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS OVERLAY ============ -->
+  <div id="settingsOverlay" class="overlay hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2>Einstellungen</h2>
+        <button class="close-btn" data-close="settingsOverlay">✕</button>
+      </div>
+
+      <div class="section">
+        <h3>Gemini API Key</h3>
+        <label class="field-label" for="apiKeyInput">Wird lokal auf diesem Gerät gespeichert.</label>
+        <input id="apiKeyInput" class="text-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Gemini API Key eingeben" />
+        <div id="savedHint" class="saved-hint"></div>
+        <button id="saveKeyBtn" class="sheet-btn primary" style="margin-top:12px;">Speichern</button>
+      </div>
+
+      <div class="section">
+        <h3>App</h3>
+        <button id="updateBtn" class="sheet-btn" style="margin-bottom:12px;">App aktualisieren</button>
+        <button id="logoutBtn" class="sheet-btn danger">Abmelden</button>
+      </div>
+
+      <div class="section">
+        <p class="version-tag">English Walk v<span id="settingsVersion">1.0.0</span> · Team Melli &amp; Marc</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FIREBASE SDK (compat via CDN) ============ -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script>
+  /* =========================================================================
+     English Walk — voice-based English conversation training PWA
+     Team Melli & Marc
+     ========================================================================= */
+  const APP_VERSION = "1.0.0";
+
+  /* ---- Firebase config (public client config for project unser-einkaufszettel)
+     NOTE: apiKey, messagingSenderId and appId were not supplied in the build
+     brief. Paste the real values from the Firebase console
+     (Project settings → General → Your apps → SDK setup and configuration).
+     Auth will not work until apiKey + appId are filled in. ---- */
+  const firebaseConfig = {
+    apiKey: "REPLACE_WITH_FIREBASE_API_KEY",
+    authDomain: "unser-einkaufszettel.firebaseapp.com",
+    databaseURL: "https://unser-einkaufszettel-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "unser-einkaufszettel",
+    storageBucket: "unser-einkaufszettel.appspot.com",
+    messagingSenderId: "REPLACE_WITH_MESSAGING_SENDER_ID",
+    appId: "REPLACE_WITH_APP_ID"
+  };
+
+  const ALLOWED_EMAIL = "marc.saenger1975@gmail.com";
+  const GEMINI_KEY_STORAGE = "englishwalk_gemini_key";
+  const GEMINI_MODEL = "gemini-2.5-flash";
+  const GEMINI_ENDPOINT = (key) =>
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+
+  const SYSTEM_PROMPT =
+    "You are an English conversation partner helping a German speaker improve their English. " +
+    "Your tone is warm, friendly and encouraging — like a good friend. Always respond in English only. " +
+    "After responding naturally to what the user said, if they made any grammar or vocabulary mistakes, " +
+    "correct them gently and naturally within your response (e.g. 'By the way, just a small tip: instead of X, " +
+    "you'd say Y — but anyway, ...'). Keep responses concise — 2 to 4 sentences max, since the user is listening, " +
+    "not reading. Always end with a follow-up question to keep the conversation going.";
+
+  /* ---------- Element refs ---------- */
+  const $ = (id) => document.getElementById(id);
+  const loginScreen   = $("loginScreen");
+  const appEl         = $("app");
+  const authError     = $("authError");
+  const statusLine    = $("statusLine");
+  const aiBubble      = $("aiBubble");
+  const userEcho      = $("userEcho");
+  const micWrap       = $("micWrap");
+  const mainBtn       = $("mainBtn");
+
+  /* ---------- Version labels ---------- */
+  ["infoVersion", "settingsVersion", "changelogVersion"].forEach((id) => {
+    const el = $(id); if (el) el.textContent = APP_VERSION;
+  });
+
+  /* =========================================================================
+     FIREBASE AUTH
+     ========================================================================= */
+  let auth = null;
+  try {
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+  } catch (e) {
+    console.error("Firebase init failed:", e);
+  }
+
+  const googleProvider = auth ? new firebase.auth.GoogleAuthProvider() : null;
+
+  $("googleSignInBtn").addEventListener("click", async () => {
+    authError.classList.add("hidden");
+    if (!auth) {
+      showAuthError("Firebase ist nicht konfiguriert. Bitte API-Key in der Konfiguration ergänzen.");
+      return;
+    }
+    try {
+      await auth.signInWithPopup(googleProvider);
+    } catch (err) {
+      console.error("Sign-in error:", err);
+      showAuthError("Anmeldung fehlgeschlagen. Bitte erneut versuchen.");
+    }
+  });
+
+  function showAuthError(msg) {
+    authError.textContent = msg;
+    authError.classList.remove("hidden");
+  }
+
+  if (auth) {
+    auth.onAuthStateChanged((user) => {
+      if (!user) {
+        showLogin();
+        return;
+      }
+      const email = (user.email || "").toLowerCase();
+      if (email !== ALLOWED_EMAIL.toLowerCase()) {
+        // Not whitelisted → sign out immediately and show German error.
+        auth.signOut();
+        showAuthError("Zugriff verweigert. Diese App ist nur für autorisierte Nutzer.");
+        showLogin();
+        return;
+      }
+      showApp(user);
+    });
+  }
+
+  function showLogin() {
+    stopConversation();
+    appEl.classList.add("hidden");
+    loginScreen.classList.remove("hidden");
+  }
+
+  function showApp(user) {
+    authError.classList.add("hidden");
+    loginScreen.classList.add("hidden");
+    appEl.classList.remove("hidden");
+    const first = (user.displayName || "Marc").split(" ")[0];
+    statusLine.textContent = `Welcome, ${first}! Tap Start when you're ready.`;
+  }
+
+  /* =========================================================================
+     OVERLAYS (Info + Settings)
+     ========================================================================= */
+  $("infoBtn").addEventListener("click", () => $("infoOverlay").classList.remove("hidden"));
+  $("settingsBtn").addEventListener("click", () => {
+    $("apiKeyInput").value = localStorage.getItem(GEMINI_KEY_STORAGE) || "";
+    $("savedHint").textContent = "";
+    $("settingsOverlay").classList.remove("hidden");
+  });
+  document.querySelectorAll("[data-close]").forEach((btn) => {
+    btn.addEventListener("click", () => $(btn.dataset.close).classList.add("hidden"));
+  });
+  document.querySelectorAll(".overlay").forEach((ov) => {
+    ov.addEventListener("click", (e) => { if (e.target === ov) ov.classList.add("hidden"); });
+  });
+
+  /* ---- Settings actions ---- */
+  $("saveKeyBtn").addEventListener("click", () => {
+    const val = $("apiKeyInput").value.trim();
+    if (val) localStorage.setItem(GEMINI_KEY_STORAGE, val);
+    else localStorage.removeItem(GEMINI_KEY_STORAGE);
+    $("savedHint").textContent = "Gespeichert ✓";
+  });
+
+  $("updateBtn").addEventListener("click", () => {
+    // Force a fresh load from the network.
+    window.location.reload(true);
+  });
+
+  $("logoutBtn").addEventListener("click", () => {
+    if (auth) auth.signOut();
+    $("settingsOverlay").classList.add("hidden");
+  });
+
+  /* =========================================================================
+     SPEECH SYNTHESIS (TTS)
+     ========================================================================= */
+  const synth = window.speechSynthesis;
+  let preferredVoice = null;
+
+  function pickVoice() {
+    if (!synth) return;
+    const voices = synth.getVoices();
+    if (!voices.length) return;
+    const enVoices = voices.filter((v) => /^en[-_]/i.test(v.lang));
+    // Prefer natural-sounding en-US voices.
+    preferredVoice =
+      enVoices.find((v) => /en[-_]US/i.test(v.lang) && /(Samantha|Ava|Aaron|Natural|Google US English)/i.test(v.name)) ||
+      enVoices.find((v) => /en[-_]US/i.test(v.lang)) ||
+      enVoices[0] ||
+      null;
+  }
+  if (synth) {
+    pickVoice();
+    synth.onvoiceschanged = pickVoice;
+  }
+
+  function speak(text) {
+    return new Promise((resolve) => {
+      if (!synth) { resolve(); return; }
+      try { synth.cancel(); } catch (_) {}
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-US";
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      if (preferredVoice) u.voice = preferredVoice;
+      u.onend = () => resolve();
+      u.onerror = () => resolve();
+      setMicState("speaking");
+      synth.speak(u);
+    });
+  }
+
+  /* =========================================================================
+     SPEECH RECOGNITION (STT)
+     ========================================================================= */
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let recognizing = false;
+
+  function buildRecognition() {
+    if (!SpeechRecognition) return null;
+    const r = new SpeechRecognition();
+    r.lang = "en-US";
+    r.continuous = false;
+    r.interimResults = true;
+    r.maxAlternatives = 1;
+    return r;
+  }
+
+  function listenOnce() {
+    return new Promise((resolve) => {
+      if (!SpeechRecognition) { resolve(""); return; }
+      recognition = buildRecognition();
+      let finalText = "";
+      let settled = false;
+      const done = (txt) => {
+        if (settled) return;
+        settled = true;
+        recognizing = false;
+        resolve(txt.trim());
+      };
+
+      recognition.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          if (res.isFinal) finalText += res[0].transcript;
+          else interim += res[0].transcript;
+        }
+        showUserEcho((finalText + " " + interim).trim());
+      };
+      recognition.onerror = (e) => {
+        console.warn("Recognition error:", e.error);
+        done(finalText);
+      };
+      recognition.onend = () => done(finalText);
+
+      try {
+        recognizing = true;
+        setMicState("listening");
+        statusLine.textContent = "Listening…";
+        recognition.start();
+      } catch (e) {
+        console.warn("recognition.start failed:", e);
+        done("");
+      }
+    });
+  }
+
+  function stopRecognition() {
+    if (recognition && recognizing) {
+      try { recognition.stop(); } catch (_) {}
+    }
+  }
+
+  /* =========================================================================
+     GEMINI API
+     ========================================================================= */
+  // history: array of { role: "user"|"model", text: string }
+  let history = [];
+
+  function trimmedHistory() {
+    // Keep last 10 exchanges (a user + model pair = 1 exchange → 20 entries).
+    const MAX = 20;
+    return history.length > MAX ? history.slice(history.length - MAX) : history;
+  }
+
+  async function callGemini(userText) {
+    const key = localStorage.getItem(GEMINI_KEY_STORAGE);
+    if (!key) {
+      throw new Error("NO_KEY");
+    }
+
+    const contents = trimmedHistory().map((h) => ({
+      role: h.role,
+      parts: [{ text: h.text }]
+    }));
+    if (userText) {
+      contents.push({ role: "user", parts: [{ text: userText }] });
+    }
+
+    const body = {
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents,
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 300
+      }
+    };
+
+    const resp = await fetch(GEMINI_ENDPOINT(key), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      console.error("Gemini error:", resp.status, errText);
+      throw new Error("API_" + resp.status);
+    }
+
+    const data = await resp.json();
+    const text =
+      data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join(" ").trim() || "";
+    return text || "Sorry, I didn't catch that. Could you say it again?";
+  }
+
+  /* =========================================================================
+     CONVERSATION LOOP
+     ========================================================================= */
+  let running = false;
+  let loopActive = false; // guards against overlapping turns
+
+  function setMicState(state) {
+    micWrap.classList.remove("listening", "speaking");
+    if (state) micWrap.classList.add(state);
+  }
+
+  function showAi(text) {
+    aiBubble.textContent = text;
+  }
+  function showUserEcho(text) {
+    userEcho.textContent = text ? `“${text}”` : "";
+    userEcho.classList.toggle("show", !!text);
+  }
+
+  function setMainButton(mode) {
+    if (mode === "stop") {
+      mainBtn.textContent = "Stop";
+      mainBtn.classList.remove("btn-start");
+      mainBtn.classList.add("btn-stop");
+    } else {
+      mainBtn.textContent = "Start";
+      mainBtn.classList.remove("btn-stop");
+      mainBtn.classList.add("btn-start");
+    }
+  }
+
+  mainBtn.addEventListener("click", () => {
+    if (running) stopConversation();
+    else startConversation();
+  });
+
+  async function startConversation() {
+    if (running) return;
+
+    if (!localStorage.getItem(GEMINI_KEY_STORAGE)) {
+      statusLine.textContent = "Bitte zuerst den Gemini API Key in ⚙️ eingeben.";
+      $("settingsOverlay").classList.remove("hidden");
+      return;
+    }
+    if (!SpeechRecognition) {
+      statusLine.textContent = "Spracherkennung wird auf diesem Browser nicht unterstützt.";
+      return;
+    }
+
+    running = true;
+    history = [];
+    showUserEcho("");
+    setMainButton("stop");
+    statusLine.textContent = "Starting…";
+
+    try {
+      // Generate a friendly opener.
+      const opener = await callGemini(
+        "Start the conversation now. Greet me (my name is Marc) warmly by name and ask an open friendly question to get me talking."
+      );
+      history.push({ role: "model", text: opener });
+      await turnSpeakThenListen(opener);
+    } catch (err) {
+      handleError(err);
+    }
+  }
+
+  async function turnSpeakThenListen(aiText) {
+    if (!running) return;
+    showAi(aiText);
+    statusLine.textContent = "Speaking…";
+    await speak(aiText);
+    if (!running) return;
+
+    // After TTS, automatically start listening.
+    const userText = await listenOnce();
+    if (!running) return;
+
+    if (!userText) {
+      // Nothing heard — gently re-listen.
+      statusLine.textContent = "I didn't hear anything — listening again…";
+      setMicState(null);
+      await new Promise((r) => setTimeout(r, 400));
+      if (running) return turnSpeakThenListen(aiText);
+      return;
+    }
+
+    showUserEcho(userText);
+    history.push({ role: "user", text: userText });
+    setMicState(null);
+    statusLine.textContent = "Thinking…";
+
+    try {
+      const reply = await callGemini(null); // history already contains the user turn
+      if (!running) return;
+      history.push({ role: "model", text: reply });
+      await turnSpeakThenListen(reply);
+    } catch (err) {
+      handleError(err);
+    }
+  }
+
+  function handleError(err) {
+    console.error(err);
+    if (err && err.message === "NO_KEY") {
+      statusLine.textContent = "Kein API Key gefunden. Bitte in ⚙️ eingeben.";
+      $("settingsOverlay").classList.remove("hidden");
+    } else if (err && /API_/.test(err.message)) {
+      statusLine.textContent = "Fehler bei der Gemini-Anfrage. API Key prüfen.";
+    } else {
+      statusLine.textContent = "Etwas ist schiefgelaufen. Bitte erneut Start tippen.";
+    }
+    stopConversation();
+  }
+
+  function stopConversation() {
+    running = false;
+    loopActive = false;
+    stopRecognition();
+    if (synth) { try { synth.cancel(); } catch (_) {} }
+    setMicState(null);
+    setMainButton("start");
+    if (!appEl.classList.contains("hidden")) {
+      statusLine.textContent = "Stopped. Tap Start to go again.";
+    }
+  }
+
+  /* =========================================================================
+     SERVICE WORKER (auto-update; never caches index.html)
+     ========================================================================= */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").then((reg) => {
+        reg.update();
+        reg.addEventListener("updatefound", () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener("statechange", () => {
+            if (nw.state === "installed" && navigator.serviceWorker.controller) {
+              // A new SW took over — it called skipWaiting(); reload to use it.
+              // (Only reload if not mid-conversation to avoid interrupting Marc.)
+              if (!running) window.location.reload();
+            }
+          });
+        });
+      }).catch((e) => console.warn("SW registration failed:", e));
+    });
+  }
+  </script>
+</body>
+</html>
